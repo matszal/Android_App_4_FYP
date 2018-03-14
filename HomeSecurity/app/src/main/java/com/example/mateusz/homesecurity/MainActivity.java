@@ -1,10 +1,15 @@
 package com.example.mateusz.homesecurity;
 
+import android.Manifest;
+import android.content.DialogInterface;
 import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,13 +20,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import permissions.dispatcher.NeedsPermission;
+import permissions.dispatcher.OnNeverAskAgain;
+import permissions.dispatcher.OnShowRationale;
+import permissions.dispatcher.PermissionRequest;
+import permissions.dispatcher.RuntimePermissions;
+
+@RuntimePermissions
 public class MainActivity extends AppCompatActivity {
 
     private static String CUSTOMER_SPECIFIC_ENDPOINT1;
     private static String CUSTOMER_SPECIFIC_ENDPOINT2;
     private static String CUSTOMER_SPECIFIC_ENDPOINT3;
 
-    File sdcard = Environment.getExternalStorageDirectory();
+    TextView keysWindow;
+    Button btnRead;
+
+    File sdcard = new File(Environment.getExternalStorageDirectory()+ "/key.txt");
 
 
     @Override
@@ -29,52 +44,74 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        final MainActivity temp = this;
+
         Toast.makeText(this, "App started succesfully!",
                 Toast.LENGTH_SHORT).show();
 
-        //Log.i ("info", "*Done creating the app");
+        Log.i ("info", "Done creating the app");
         Toast.makeText(this, String.valueOf(sdcard), Toast.LENGTH_SHORT).show();
+
+        keysWindow = (TextView) findViewById(R.id.keysViev);
+
+        btnRead = (Button)findViewById(R.id.readKeysBtn);
+        btnRead.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivityPermissionsDispatcher.readStorageWithPermissionCheck(temp);
+
+            }
+        });
 
     }
 
-    public void readKeysClick (View v) {
+    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+    void readStorage() {
+        StringBuilder sb = new StringBuilder();
 
-
-
-
-        String path = "ket.txt";
-        //String[] stringArr;
-        TextView keysWindow = (TextView) findViewById(R.id.keysViev);
-        Toast.makeText(this, String.valueOf(sdcard+" "+path), Toast.LENGTH_SHORT).show();
-        File file = new File(sdcard, path);
-        List<String> text = new ArrayList<String>();
-
+        //Call this from onCreate as a new thread%%%%%%%%%%%%%%%%%%%%%to be implemented as next...
         try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
+            BufferedReader br = new BufferedReader(new FileReader(sdcard));
             String line;
 
             while ((line = br.readLine()) != null) {
-                text.add(line);
+                sb.append(line);
+                sb.append('\n');
             }
             br.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            Toast.makeText(getApplicationContext(), "Error While reading file", Toast.LENGTH_SHORT).show();
         }
-        //Toast.makeText(this, String.valueOf(text), Toast.LENGTH_SHORT).show();
-        int numOfElements = text.size();
+        keysWindow.setText(sb);
+    }
 
-        String[] stringArr = new String[0];
-        for (int i = 0; i < numOfElements; i++) {
-            stringArr = text.toArray(new String[i]);
-        }
-        String test = stringArr[0];
-        CUSTOMER_SPECIFIC_ENDPOINT2 = "test";//stringArr[1];
-        //CUSTOMER_SPECIFIC_ENDPOINT3 = stringArr[2];
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
+    }
 
-        //Log.i("info", "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% " + String.valueOf(test));
+    @OnShowRationale(Manifest.permission.READ_EXTERNAL_STORAGE)
+    void readStorageRationale(final PermissionRequest request) {
+        new AlertDialog.Builder(this)
+                .setMessage("To read internal storage, enable Read Storage")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        request.proceed();
+                    }
+                })
+                .setNegativeButton("Deny", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        request.cancel();
+                    }
+                })
+                .show();
+    }
 
-        //keysWindow.setText(String.valueOf(CUSTOMER_SPECIFIC_ENDPOINT2));
-
-
+    @OnNeverAskAgain(Manifest.permission.READ_EXTERNAL_STORAGE)
+    void sendMessageNever() {
+        Toast.makeText(this, "You have denied permission", Toast.LENGTH_SHORT).show();
     }
 }
