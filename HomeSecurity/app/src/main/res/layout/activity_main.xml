@@ -16,7 +16,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2"
-            android:text="Client ID" />
+            android:text="@string/client_id" />
 
         <TextView
             android:id="@+id/tvClientId"
@@ -35,20 +35,20 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="2"
-            android:text="Status:" />
+            android:text="@string/status" />
 
         <TextView
             android:id="@+id/tvStatus"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="5"
-            android:text="Disconnected" />
+            android:text="@string/disconnected" />
 
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal">
 
         <Button
@@ -56,14 +56,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Connect" />
+            android:text="@string/connect" />
 
         <Button
             android:id="@+id/btnDisconnect"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Disconnect" />
+            android:text="@string/disconnect" />
+
     </LinearLayout>
 
 </LinearLayout>

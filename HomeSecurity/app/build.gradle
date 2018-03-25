@@ -32,4 +32,5 @@ dependencies {
     compile 'com.amazonaws:aws-android-sdk-s3:2.6.+'
     compile 'com.amazonaws:aws-android-sdk-ddb:2.6.+'
     compile 'com.amazonaws:aws-android-sdk-iot:2.6.+'
+    implementation 'com.android.support:design:26.1.0'
 }

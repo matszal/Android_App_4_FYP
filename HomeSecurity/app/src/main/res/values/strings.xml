@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">HomeSecurity</string>
+    <string name="title_activity_tabbed">TabbedActivity</string>
+    <string name="tab_text_1">Tab 1</string>
+    <string name="tab_text_2">Tab 2</string>
+    <string name="tab_text_3">Tab 3</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="mqtt">MQTT</string>
+    <string name="client_id">Client ID</string>
+    <string name="status">Status:</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connect">Connect</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="MQTT">MQTT</string>
+    <string name="s3_bucket">S3 BUCKET</string>
+    <string name="live_stream">LIVE STREAM</string>
 </resources>

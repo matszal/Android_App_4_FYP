@@ -2,6 +2,7 @@ package com.example.mateusz.homesecurity;
 
 import android.Manifest;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -12,6 +13,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
@@ -92,6 +97,16 @@ public class MainActivity extends AppCompatActivity {
                 Toast.LENGTH_SHORT).show();
 
         Log.i("info", "Done creating the app");
+
+
+        //Check if app has an access to internet
+        if (!AppStatus.getInstance(this).isOnline()) {
+
+            Toast.makeText(this,"Please check your internet connection",Toast.LENGTH_LONG).show();
+            Log.v("Home", "############################You are not online!!!!");
+            //btnConnect.setEnabled(false);
+
+        }
 
         //Read all credentials on separate thread
         Thread t1 = new Thread(new Runnable() {
@@ -301,9 +316,45 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+
+    public static class AppStatus {
+
+        private static AppStatus instance = new AppStatus();
+        static Context context;
+        ConnectivityManager connectivityManager;
+        NetworkInfo wifiInfo, mobileInfo;
+        boolean connected = false;
+
+        public static AppStatus getInstance(Context ctx) {
+            context = ctx.getApplicationContext();
+            return instance;
+        }
+
+        public boolean isOnline() {
+            try {
+                connectivityManager = (ConnectivityManager) context
+                        .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+                NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+                connected = networkInfo != null && networkInfo.isAvailable() &&
+                        networkInfo.isConnected();
+                return connected;
+
+
+            } catch (Exception e) {
+                System.out.println("CheckConnectivity Exception: " + e.getMessage());
+                Log.v("connectivity", e.toString());
+            }
+            return connected;
+        }
+    }
+
+
+
+
     View.OnClickListener connect = new View.OnClickListener() {
         @Override
-        public void onClick(View v) {
+        public void onClick(final View v) {
             Log.d(LOG_TAG, "clientId = " + clientId);
 
             try {
@@ -321,6 +372,9 @@ public class MainActivity extends AppCompatActivity {
 
                             } else if (status == AWSIotMqttClientStatus.Connected) {
                                 tvStatus.setText("Connected");
+                                btnConnect.setEnabled(false);
+                                Intent intent = new Intent(v.getContext(), TabbedActivity.class);
+                                v.getContext().startActivity(intent);
 
                             } else if (status == AWSIotMqttClientStatus.Reconnecting) {
                                 if (throwable != null) {
@@ -332,8 +386,10 @@ public class MainActivity extends AppCompatActivity {
                                     Log.e(LOG_TAG, "Connection error.", throwable);
                                 }
                                 tvStatus.setText("Disconnected");
+                                btnConnect.setEnabled(true);
                             } else {
                                 tvStatus.setText("Disconnected");
+                                btnConnect.setEnabled(true);
 
                             }
                         }
@@ -362,4 +418,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+
+
 }
+
