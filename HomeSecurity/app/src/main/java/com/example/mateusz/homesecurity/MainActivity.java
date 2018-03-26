@@ -13,12 +13,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-
-
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.mobileconnectors.iot.AWSIotKeystoreHelper;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback;
@@ -31,13 +28,14 @@ import com.amazonaws.services.iot.AWSIotClient;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
+import com.google.gson.Gson;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
@@ -51,7 +49,7 @@ import permissions.dispatcher.PermissionRequest;
 import permissions.dispatcher.RuntimePermissions;
 
 @RuntimePermissions
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
     static final String LOG_TAG = MainActivity.class.getCanonicalName();
 
     //Toast.makeText(this, String.valueOf(sdcard), Toast.LENGTH_SHORT).show();
@@ -82,8 +80,8 @@ public class MainActivity extends AppCompatActivity {
 
     File sdcard = new File(Environment.getExternalStorageDirectory() + fileName);
 
-    AWSIotClient mIotAndroidClient;
-    AWSIotMqttManager mqttManager;
+    static AWSIotClient mIotAndroidClient;
+    static AWSIotMqttManager mqttManager;
 
     CognitoCachingCredentialsProvider credentialsProvider;
 
@@ -373,7 +371,13 @@ public class MainActivity extends AppCompatActivity {
                             } else if (status == AWSIotMqttClientStatus.Connected) {
                                 tvStatus.setText("Connected");
                                 btnConnect.setEnabled(false);
+
+
+                                //Gson gson = new Gson();
+                                //String mqttAsString = gson.toJson(mqttManager);
+
                                 Intent intent = new Intent(v.getContext(), TabbedActivity.class);
+                                //intent.putExtra("object", mqttAsString);
                                 v.getContext().startActivity(intent);
 
                             } else if (status == AWSIotMqttClientStatus.Reconnecting) {

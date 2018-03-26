@@ -20,6 +20,9 @@ import android.view.ViewGroup;
 
 import android.widget.TextView;
 
+import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
+import com.google.gson.Gson;
+
 public class TabbedActivity extends AppCompatActivity {
 
 
