@@ -9,21 +9,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-
-import com.amazonaws.mobileconnectors.iot.AWSIotMqttLastWillAndTestament;
-import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttNewMessageCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos;
-import com.google.gson.Gson;
-
-
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import java.io.UnsupportedEncodingException;
-import java.util.zip.Inflater;
-
 import static com.example.mateusz.homesecurity.MainActivity.LOG_TAG;
 import static com.example.mateusz.homesecurity.MainActivity.mqttManager;
 
@@ -34,15 +24,11 @@ import static com.example.mateusz.homesecurity.MainActivity.mqttManager;
 public class Tab1Fragment extends Fragment {
     private static final String TAG = "Tab1Fragment";
 
-    //AWSIotMqttManager mqttManager;
-
-
-
     //private Button btnTest1;
     private Button btnPublish;
     private Button btnClearAll;
     private TextView incomingText;
-    private EditText outgoingtext;
+    private EditText outgoingText;
 
     private String id;
     private String endPoint;
@@ -60,20 +46,17 @@ public class Tab1Fragment extends Fragment {
         btnPublish.setOnClickListener(publishClick);
 
         btnClearAll = (Button)view.findViewById(R.id.btnClear);
-
+        btnClearAll.setOnClickListener(clearAll);
         incomingText = (TextView)view.findViewById(R.id.incomingTxt);
-
-        outgoingtext = (EditText)view.findViewById(R.id.outgoingTxt);
+        outgoingText = (EditText)view.findViewById(R.id.outgoingTxt);
 
 
         return view;
     }
 
-
-
     public void subscribe() {
 
-        final String topic = "mytopic/iot";
+        final String topic = "mytopic/iot/led";
 
         Log.d(LOG_TAG, "topic = " + topic);
 
@@ -87,7 +70,7 @@ public class Tab1Fragment extends Fragment {
                             Log.d(LOG_TAG, "   Topic: " + topic);
                             Log.d(LOG_TAG, " Message: " + message);
 
-                            incomingText.setText(message);
+                            incomingText.append(message+"\n");
 
                         } catch (UnsupportedEncodingException e) {
                             Log.e(LOG_TAG, "Message encoding error.", e);
@@ -106,8 +89,8 @@ public class Tab1Fragment extends Fragment {
         @Override
         public void onClick(View v) {
 
-            final String topic = "mytopic/iot";
-            final String msg = outgoingtext.getText().toString();
+            final String topic = "mytopic/iot/led";
+            final String msg = outgoingText.getText().toString();
 
             try {
                 mqttManager.publishString(msg, topic, AWSIotMqttQos.QOS0);
@@ -118,5 +101,12 @@ public class Tab1Fragment extends Fragment {
         }
     };
 
+    View.OnClickListener clearAll = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            incomingText.setText("");
+            outgoingText.setText("");
+        }
+    };
 
 }

@@ -4,7 +4,7 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.StrictMode;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -28,20 +28,16 @@ import com.amazonaws.services.iot.AWSIotClient;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
-import com.google.gson.Gson;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.security.KeyStore;
 import java.util.UUID;
-
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.OnNeverAskAgain;
 import permissions.dispatcher.OnShowRationale;
@@ -52,8 +48,6 @@ import permissions.dispatcher.RuntimePermissions;
 public class MainActivity extends AppCompatActivity{
     static final String LOG_TAG = MainActivity.class.getCanonicalName();
 
-    //Toast.makeText(this, String.valueOf(sdcard), Toast.LENGTH_SHORT).show();
-
     private static String CUSTOMER_SPECIFIC_ENDPOINT;       //cse
     private static String COGNITO_POOL_ID;                  //cp_id
     private static String AWS_IOT_POLICY_NAME;              //policy
@@ -61,6 +55,7 @@ public class MainActivity extends AppCompatActivity{
     private static String KEYSTORE_NAME;                    //key_name
     private static String KEYSTORE_PASSWORD;                //key_pass;
     private static String CERTIFICATE_ID;                   //cert_id
+
 
     String clientId;
     String keystorePath;
@@ -78,7 +73,7 @@ public class MainActivity extends AppCompatActivity{
     TextView tvClientId;
     TextView tvStatus;
 
-    File sdcard = new File(Environment.getExternalStorageDirectory() + fileName);
+    File sdcard = new File("sdcard/AWS_CREDENTIALS" + fileName);
 
     static AWSIotClient mIotAndroidClient;
     static AWSIotMqttManager mqttManager;
@@ -90,42 +85,35 @@ public class MainActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //Allowing Strict mode policy for Nougat support
+        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+        StrictMode.setVmPolicy(builder.build());
 
         Toast.makeText(this, "App started succesfully!",
                 Toast.LENGTH_SHORT).show();
 
         Log.i("info", "Done creating the app");
 
+        //check for storage access permissions
+        final MainActivity temp = this;
+        MainActivityPermissionsDispatcher.readStorageWithPermissionCheck(temp);
+        readStorage();
 
         //Check if app has an access to internet
         if (!AppStatus.getInstance(this).isOnline()) {
 
-            Toast.makeText(this,"Please check your internet connection",Toast.LENGTH_LONG).show();
+           // Toast.makeText(this,"Please check your internet connection",Toast.LENGTH_LONG).show();
             Log.v("Home", "############################You are not online!!!!");
             //btnConnect.setEnabled(false);
-
         }
-
-        //Read all credentials on separate thread
-        Thread t1 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                readStorage();
-            }
-        });
-        t1.start();
-
 
         tvClientId = (TextView) findViewById(R.id.tvClientId);
         tvStatus = (TextView) findViewById(R.id.tvStatus);
-
         btnConnect = (Button)findViewById(R.id.btnConnect);
         btnConnect.setOnClickListener(connect);
         btnConnect.setEnabled(false);
-
         btnDisconnect = (Button)findViewById(R.id.btnDisconnect);
         btnDisconnect.setOnClickListener(disconnect);
-
 
 
         // MQTT client IDs are required to be unique per AWS IoT account.
@@ -259,7 +247,7 @@ public class MainActivity extends AppCompatActivity{
                 MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
                 jsonStr = Charset.defaultCharset().decode(bb).toString();
             }catch(Exception e){
-                Toast.makeText(this, "exception after reading json object!", Toast.LENGTH_SHORT).show();
+               // Toast.makeText(this, "exception after reading json object!", Toast.LENGTH_SHORT).show();
             }
             finally {
                 fis.close();
@@ -308,11 +296,11 @@ public class MainActivity extends AppCompatActivity{
                 .show();
     }
 
+
     @OnNeverAskAgain(Manifest.permission.READ_EXTERNAL_STORAGE)
-    void sendMessageNever() {
+    void readStorageNever() {
         Toast.makeText(this, "You have denied permission", Toast.LENGTH_SHORT).show();
     }
-
 
 
     public static class AppStatus {
@@ -347,15 +335,17 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-
-
-
     View.OnClickListener connect = new View.OnClickListener() {
+
+        boolean alreadyEcecuted = false;
+
         @Override
         public void onClick(final View v) {
+
             Log.d(LOG_TAG, "clientId = " + clientId);
 
             try {
+
                 mqttManager.connect(clientKeyStore, new AWSIotMqttClientStatusCallback() {
                     @Override
                     public void onStatusChanged(final AWSIotMqttClientStatus status,
@@ -363,6 +353,7 @@ public class MainActivity extends AppCompatActivity{
                     Log.d(LOG_TAG, "Status = " + String.valueOf(status));
 
                     runOnUiThread(new Runnable() {
+
                         @Override
                         public void run() {
                             if (status == AWSIotMqttClientStatus.Connecting) {
@@ -371,30 +362,28 @@ public class MainActivity extends AppCompatActivity{
                             } else if (status == AWSIotMqttClientStatus.Connected) {
                                 tvStatus.setText("Connected");
                                 btnConnect.setEnabled(false);
-
-
-                                //Gson gson = new Gson();
-                                //String mqttAsString = gson.toJson(mqttManager);
-
-                                Intent intent = new Intent(v.getContext(), TabbedActivity.class);
-                                //intent.putExtra("object", mqttAsString);
-                                v.getContext().startActivity(intent);
+                                if (!alreadyEcecuted){
+                                    Intent intent = new Intent(v.getContext(), TabbedActivity.class);
+                                    v.getContext().startActivity(intent);
+                                    alreadyEcecuted = true;
+                                }
 
                             } else if (status == AWSIotMqttClientStatus.Reconnecting) {
                                 if (throwable != null) {
                                     Log.e(LOG_TAG, "Connection error.", throwable);
                                 }
                                 tvStatus.setText("Reconnecting");
+                                alreadyEcecuted = false;
                             } else if (status == AWSIotMqttClientStatus.ConnectionLost) {
                                 if (throwable != null) {
                                     Log.e(LOG_TAG, "Connection error.", throwable);
                                 }
                                 tvStatus.setText("Disconnected");
+                                 alreadyEcecuted = false;
                                 btnConnect.setEnabled(true);
                             } else {
                                 tvStatus.setText("Disconnected");
                                 btnConnect.setEnabled(true);
-
                             }
                         }
                     });
@@ -421,8 +410,6 @@ public class MainActivity extends AppCompatActivity{
 
         }
     };
-
-
 
 }
 
