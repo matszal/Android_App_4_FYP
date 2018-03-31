@@ -21,6 +21,7 @@ import com.amazonaws.mobileconnectors.iot.AWSIotKeystoreHelper;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttLastWillAndTestament;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
+import com.amazonaws.mobileconnectors.iot.AWSIotMqttNewMessageCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -28,11 +29,14 @@ import com.amazonaws.services.iot.AWSIotClient;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
+import com.google.firebase.iid.FirebaseInstanceId;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
@@ -70,6 +74,11 @@ public class MainActivity extends AppCompatActivity{
     //TextView keysWindow;
     Button btnConnect;
     Button btnDisconnect;
+    Button btn;
+
+    Button devON;
+    Button devOFF;
+
     TextView tvClientId;
     TextView tvStatus;
 
@@ -77,7 +86,6 @@ public class MainActivity extends AppCompatActivity{
 
     static AWSIotClient mIotAndroidClient;
     static AWSIotMqttManager mqttManager;
-
     CognitoCachingCredentialsProvider credentialsProvider;
 
 
@@ -85,6 +93,7 @@ public class MainActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         //Allowing Strict mode policy for Nougat support
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
@@ -114,6 +123,22 @@ public class MainActivity extends AppCompatActivity{
         btnConnect.setEnabled(false);
         btnDisconnect = (Button)findViewById(R.id.btnDisconnect);
         btnDisconnect.setOnClickListener(disconnect);
+        devON = (Button) findViewById(R.id.deviceON);
+        devON.setEnabled(false);
+        devON.setOnClickListener(publish);
+        devOFF = (Button)findViewById(R.id.deviceOFF);
+        devOFF.setEnabled(false);
+        devOFF.setOnClickListener(publish2);
+        btn = (Button) findViewById(R.id.getToken);
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String token = FirebaseInstanceId.getInstance().getToken();
+                Log.i("info", token);
+                Toast.makeText(MainActivity.this, token,Toast.LENGTH_SHORT).show();
+            }
+        });
+
 
 
         // MQTT client IDs are required to be unique per AWS IoT account.
@@ -337,8 +362,6 @@ public class MainActivity extends AppCompatActivity{
 
     View.OnClickListener connect = new View.OnClickListener() {
 
-        boolean alreadyEcecuted = false;
-
         @Override
         public void onClick(final View v) {
 
@@ -362,28 +385,33 @@ public class MainActivity extends AppCompatActivity{
                             } else if (status == AWSIotMqttClientStatus.Connected) {
                                 tvStatus.setText("Connected");
                                 btnConnect.setEnabled(false);
-                                if (!alreadyEcecuted){
-                                    Intent intent = new Intent(v.getContext(), TabbedActivity.class);
-                                    v.getContext().startActivity(intent);
-                                    alreadyEcecuted = true;
-                                }
+                                subscribeLed();
+                                devOFF.setEnabled(true);
+                                devON.setEnabled(true);
+                                //if (!alreadyEcecuted){
+                                  //  Intent intent = new Intent(v.getContext(), TabbedActivity.class);
+                                    //v.getContext().startActivity(intent);
+                                    //alreadyEcecuted = true;
+                                //}
 
                             } else if (status == AWSIotMqttClientStatus.Reconnecting) {
                                 if (throwable != null) {
                                     Log.e(LOG_TAG, "Connection error.", throwable);
                                 }
                                 tvStatus.setText("Reconnecting");
-                                alreadyEcecuted = false;
                             } else if (status == AWSIotMqttClientStatus.ConnectionLost) {
                                 if (throwable != null) {
                                     Log.e(LOG_TAG, "Connection error.", throwable);
                                 }
                                 tvStatus.setText("Disconnected");
-                                 alreadyEcecuted = false;
                                 btnConnect.setEnabled(true);
+                                devOFF.setEnabled(false);
+                                devON.setEnabled(false);
                             } else {
                                 tvStatus.setText("Disconnected");
                                 btnConnect.setEnabled(true);
+                                devOFF.setEnabled(false);
+                                devON.setEnabled(false);
                             }
                         }
                     });
@@ -398,6 +426,8 @@ public class MainActivity extends AppCompatActivity{
 
     };
 
+
+
     View.OnClickListener disconnect = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -411,5 +441,66 @@ public class MainActivity extends AppCompatActivity{
         }
     };
 
+    public void subscribeLed() {
+
+        final String topic = "mytopic/iot/led";
+
+        Log.d(LOG_TAG, "topic = " + topic);
+
+        try {
+            mqttManager.subscribeToTopic(topic, AWSIotMqttQos.QOS0, new AWSIotMqttNewMessageCallback() {
+                @Override
+                public void onMessageArrived(final String topic, final byte[] data) {
+                    try {
+                        String message = new String(data, "UTF-8");
+                        Log.d(LOG_TAG, "Message arrived:");
+                        Log.d(LOG_TAG, "   Topic: " + topic);
+                        Log.d(LOG_TAG, " Message: " + message);
+
+                        //incomingText.append(message+"\n");
+
+                    } catch (UnsupportedEncodingException e) {
+                        Log.e(LOG_TAG, "Message encoding error.", e);
+                    }
+                }
+            });
+
+
+
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Subscription error.", e);
+        }
+    }
+
+    View.OnClickListener publish = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+            final String topic = "mytopic/iot/led";
+            //final String msg = outgoingText.getText().toString();
+
+            try {
+                mqttManager.publishString("on", topic, AWSIotMqttQos.QOS0);
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Publish error.", e);
+            }
+
+        }
+    };
+    View.OnClickListener publish2 = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+            final String topic = "mytopic/iot/led";
+            //final String msg = outgoingText.getText().toString();
+
+            try {
+                mqttManager.publishString("off", topic, AWSIotMqttQos.QOS0);
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Publish error.", e);
+            }
+
+        }
+    };
 }
 
