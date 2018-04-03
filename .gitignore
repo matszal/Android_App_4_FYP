@@ -44,4 +44,5 @@ Thumbs.db
 key.txt
 /CodeSamples
 /assets
-.google-services.json
+/HomeSecurity/App/google-services.json
+/StorageTest
