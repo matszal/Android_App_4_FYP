@@ -15,4 +15,7 @@
     <string name="MQTT">MQTT</string>
     <string name="s3_bucket">S3 BUCKET</string>
     <string name="live_stream">LIVE STREAM</string>
+    <string name="about">About</string>
+    <string name="restart">Restart</string>
+    <string name="exit_app">Exit App</string>
 </resources>
