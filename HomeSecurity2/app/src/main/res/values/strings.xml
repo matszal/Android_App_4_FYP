@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">HomeSecurity</string>
+    <string name="title_activity_create">CreateActivity</string>
+    <string name="about">About</string>
+    <string name="restart">Restart</string>
+    <string name="exit_app">Exit App</string>
+    <string name="client_id">Client ID</string>
+    <string name="status">Status:</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connect">Connect</string>
+    <string name="disconnected">Disconnected</string>
+</resources>

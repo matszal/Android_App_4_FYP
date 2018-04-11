@@ -71,8 +71,6 @@ public class MainActivity extends AppCompatActivity{
     KeyStore clientKeyStore = null;
     String certificateId;
 
-    private String fileName = "/credentials_app.json";
-
     //TextView keysWindow;
     Button btnConnect;
     Button btnDisconnect;
@@ -84,6 +82,7 @@ public class MainActivity extends AppCompatActivity{
     TextView tvClientId;
     TextView tvStatus;
 
+    private String fileName = "/credentials_app.json";
     File sdcard = new File("sdcard/AWS_CREDENTIALS" + fileName);
 
     static AWSIotClient mIotAndroidClient;
@@ -102,9 +101,7 @@ public class MainActivity extends AppCompatActivity{
 
         Toast.makeText(this, "App started succesfully!",
                 Toast.LENGTH_SHORT).show();
-
         Log.i("info", "Done creating the app");
-
 
         //Check internet access
         if(!isNetworkAvailable()){
@@ -137,8 +134,13 @@ public class MainActivity extends AppCompatActivity{
         }
         else{
             //check for storage access permissions
+            //instance if mainactivity has to be passed on to permission dispatcher Android > 6 reqs
             final MainActivity temp = this;
             MainActivityPermissionsDispatcher.readStorageWithPermissionCheck(temp);
+
+            //Start aws connection service
+            Intent connectionToAWS = new Intent(this, ConnectionAWS.class);
+            startService(connectionToAWS);
 
 
             tvClientId = (TextView) findViewById(R.id.tvClientId);
@@ -333,7 +335,7 @@ public class MainActivity extends AppCompatActivity{
                 MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
                 jsonStr = Charset.defaultCharset().decode(bb).toString();
             }catch(Exception e){
-               // Toast.makeText(this, "exception after reading json object!", Toast.LENGTH_SHORT).show();
+                // Toast.makeText(this, "exception after reading json object!", Toast.LENGTH_SHORT).show();
             }
             finally {
                 fis.close();
@@ -403,48 +405,48 @@ public class MainActivity extends AppCompatActivity{
                     @Override
                     public void onStatusChanged(final AWSIotMqttClientStatus status,
                                                 final Throwable throwable) {
-                    Log.d(LOG_TAG, "Status = " + String.valueOf(status));
+                        Log.d(LOG_TAG, "Status = " + String.valueOf(status));
 
-                    runOnUiThread(new Runnable() {
+                        runOnUiThread(new Runnable() {
 
-                        @Override
-                        public void run() {
-                            if (status == AWSIotMqttClientStatus.Connecting) {
-                                tvStatus.setText("Connecting...");
+                            @Override
+                            public void run() {
+                                if (status == AWSIotMqttClientStatus.Connecting) {
+                                    tvStatus.setText("Connecting...");
 
-                            } else if (status == AWSIotMqttClientStatus.Connected) {
-                                tvStatus.setText("Connected");
-                                btnConnect.setEnabled(false);
-                                subscribeLed();
-                                devOFF.setEnabled(true);
-                                devON.setEnabled(true);
-                                //if (!alreadyEcecuted){
-                                  //  Intent intent = new Intent(v.getContext(), TabbedActivity.class);
+                                } else if (status == AWSIotMqttClientStatus.Connected) {
+                                    tvStatus.setText("Connected");
+                                    btnConnect.setEnabled(false);
+                                    subscribeLed();
+                                    devOFF.setEnabled(true);
+                                    devON.setEnabled(true);
+                                    //if (!alreadyEcecuted){
+                                    //  Intent intent = new Intent(v.getContext(), TabbedActivity.class);
                                     //v.getContext().startActivity(intent);
                                     //alreadyEcecuted = true;
-                                //}
+                                    //}
 
-                            } else if (status == AWSIotMqttClientStatus.Reconnecting) {
-                                if (throwable != null) {
-                                    Log.e(LOG_TAG, "Connection error.", throwable);
+                                } else if (status == AWSIotMqttClientStatus.Reconnecting) {
+                                    if (throwable != null) {
+                                        Log.e(LOG_TAG, "Connection error.", throwable);
+                                    }
+                                    tvStatus.setText("Reconnecting");
+                                } else if (status == AWSIotMqttClientStatus.ConnectionLost) {
+                                    if (throwable != null) {
+                                        Log.e(LOG_TAG, "Connection error.", throwable);
+                                    }
+                                    tvStatus.setText("Disconnected");
+                                    btnConnect.setEnabled(true);
+                                    devOFF.setEnabled(false);
+                                    devON.setEnabled(false);
+                                } else {
+                                    tvStatus.setText("Disconnected");
+                                    btnConnect.setEnabled(true);
+                                    devOFF.setEnabled(false);
+                                    devON.setEnabled(false);
                                 }
-                                tvStatus.setText("Reconnecting");
-                            } else if (status == AWSIotMqttClientStatus.ConnectionLost) {
-                                if (throwable != null) {
-                                    Log.e(LOG_TAG, "Connection error.", throwable);
-                                }
-                                tvStatus.setText("Disconnected");
-                                btnConnect.setEnabled(true);
-                                devOFF.setEnabled(false);
-                                devON.setEnabled(false);
-                            } else {
-                                tvStatus.setText("Disconnected");
-                                btnConnect.setEnabled(true);
-                                devOFF.setEnabled(false);
-                                devON.setEnabled(false);
                             }
-                        }
-                    });
+                        });
                     }
                 });
             } catch (final Exception e) {
@@ -541,4 +543,3 @@ public class MainActivity extends AppCompatActivity{
 
     }
 }
-
