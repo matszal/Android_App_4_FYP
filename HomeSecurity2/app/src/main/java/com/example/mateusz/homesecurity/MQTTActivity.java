@@ -1,9 +1,14 @@
 package com.example.mateusz.homesecurity;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
+import android.text.InputFilter;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,6 +25,7 @@ import com.amazonaws.services.iot.AWSIotClient;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
+import com.parse.ParseUser;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,17 +41,11 @@ import java.security.KeyStore;
 import java.util.UUID;
 
 
+
 public class MQTTActivity extends BaseActivity implements View.OnClickListener {
 
     static final String LOG_TAG = MainActivity.class.getCanonicalName();
-
-    public static String CUSTOMER_SPECIFIC_ENDPOINT;       //cse
-    private static String COGNITO_POOL_ID;                  //cp_id
-    private static String AWS_IOT_POLICY_NAME;              //policy
     private static Regions MY_REGION = Regions.EU_WEST_1;
-    private static String KEYSTORE_NAME;                    //key_name
-    private static String KEYSTORE_PASSWORD;                //key_pass;
-    private static String CERTIFICATE_ID;                   //cert_id
 
     String clientId;
     String keystorePath;
@@ -58,7 +58,7 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
     //TextView keysWindow;
     Button btnCon;
     Button btnDisc;
-    Button btn;
+    Button btnSetTemp;
 
     Button devON;
     Button devOFF;
@@ -66,8 +66,8 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
     TextView tvClientId;
     TextView tvStatus;
 
-    private String fileName = "/credentials_app.json";
-    File sdcard = new File("sdcard/AWS_CREDENTIALS" + fileName);
+    EditText setTempTxt;
+
 
     AWSIotClient mIotAndroidClient;
     AWSIotMqttManager mqttManager;
@@ -78,7 +78,8 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mqtt);
 
-        readStorage();
+        setTempTxt = (EditText) findViewById(R.id.setTempText);
+        //setTempTxt.setFilters(new InputFilter[]{new InputFilterMM("17", "27")});
         tvClientId = (TextView) findViewById(R.id.tvClientId);
         tvStatus = (TextView) findViewById(R.id.tvStatus);
         btnCon = (Button)findViewById(R.id.btnConnect);
@@ -88,27 +89,33 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
         devON.setEnabled(false);
         devOFF = (Button)findViewById(R.id.deviceOFF);
         devOFF.setEnabled(false);
+        btnSetTemp = (Button)findViewById(R.id.setTemp);
+        btnSetTemp.setEnabled(false);
 
         devON.setOnClickListener(this);
         devOFF.setOnClickListener(this);
         btnCon.setOnClickListener(this);
         btnDisc.setOnClickListener(this);
+        btnSetTemp.setOnClickListener(this);
 
 
         clientId = UUID.randomUUID().toString();
         tvClientId.setText(clientId);
 
+        //Log.i("¢######################", clientId);
+        Log.i("¢######################", Constants.CUSTOMER_SPECIFIC_ENDPOINT.toString());
+
         // Initialize the AWS Cognito credentials provider
         credentialsProvider = new CognitoCachingCredentialsProvider(
                 getApplicationContext(), // context
-                COGNITO_POOL_ID, // Identity Pool ID
+                Constants.COGNITO_POOL_ID, // Identity Pool ID
                 MY_REGION // Region
         );
 
         Region region = Region.getRegion(MY_REGION);
 
         // MQTT Client
-        mqttManager = new AWSIotMqttManager(clientId, CUSTOMER_SPECIFIC_ENDPOINT);
+        mqttManager = new AWSIotMqttManager(clientId, Constants.CUSTOMER_SPECIFIC_ENDPOINT);
 
         // Set keepalive to 10 seconds.  Will recognize disconnects more quickly but will also send
         // MQTT pings every 10 seconds.
@@ -125,9 +132,10 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
         mIotAndroidClient.setRegion(region);
 
         keystorePath = getFilesDir().getPath();
-        keystoreName = KEYSTORE_NAME;
-        keystorePassword = KEYSTORE_PASSWORD;
-        certificateId = CERTIFICATE_ID;
+        keystoreName = Constants.KEYSTORE_NAME;
+        keystorePassword = Constants.KEYSTORE_PASSWORD;
+        certificateId = Constants.CERTIFICATE_ID;
+
 
         // To load cert/key from keystore on filesystem
         try {
@@ -190,7 +198,7 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
                         // certificate.
                         AttachPrincipalPolicyRequest policyAttachRequest =
                                 new AttachPrincipalPolicyRequest();
-                        policyAttachRequest.setPolicyName(AWS_IOT_POLICY_NAME);
+                        policyAttachRequest.setPolicyName(Constants.AWS_IOT_POLICY_NAME);
                         policyAttachRequest.setPrincipal(createKeysAndCertificateResult
                                 .getCertificateArn());
                         mIotAndroidClient.attachPrincipalPolicy(policyAttachRequest);
@@ -209,41 +217,6 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
                 }
             }).start();
         }
-    }
-
-    public void readStorage() {
-
-        try {
-            FileInputStream fis = new FileInputStream((sdcard));
-            String jsonStr = null;
-
-            try{
-                FileChannel fc = fis.getChannel();
-                MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
-                jsonStr = Charset.defaultCharset().decode(bb).toString();
-            }catch(Exception e){
-                // Toast.makeText(this, "exception after reading json object!", Toast.LENGTH_SHORT).show();
-            }
-            finally {
-                fis.close();
-            }
-
-            JSONObject jsonObj = new JSONObject(jsonStr);
-            JSONObject data = jsonObj.getJSONObject("credentials");
-
-            CUSTOMER_SPECIFIC_ENDPOINT = data.getString("cse");
-            COGNITO_POOL_ID = data.getString("cp_id");
-            AWS_IOT_POLICY_NAME = data.getString("policy");
-            KEYSTORE_NAME = data.getString("key_name");
-            KEYSTORE_PASSWORD = data.getString("key_pass");
-            CERTIFICATE_ID = data.getString("cert_id");
-
-        } catch (IOException e) {
-            Toast.makeText(getApplicationContext(), "Error While reading file", Toast.LENGTH_SHORT).show();
-        } catch (JSONException e){
-            Toast.makeText(getApplicationContext(), "JSON exception", Toast.LENGTH_SHORT).show();
-        }
-
     }
 
     @Override
@@ -295,6 +268,7 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
                                         //subscribeLed();
                                         devOFF.setEnabled(true);
                                         devON.setEnabled(true);
+                                        btnSetTemp.setEnabled(true);
                                         //if (!alreadyEcecuted){
                                         //  Intent intent = new Intent(v.getContext(), TabbedActivity.class);
                                         //v.getContext().startActivity(intent);
@@ -319,6 +293,7 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
                                         btnCon.setEnabled(true);
                                         devOFF.setEnabled(false);
                                         devON.setEnabled(false);
+                                        btnSetTemp.setEnabled(false);
                                     }
                                 }
                             });
@@ -334,44 +309,37 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
             case R.id.btnDisconnect:
                 try {
                     mqttManager.disconnect();
+                    ParseUser.logOut();
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Disconnect error.", e);
                 }
                 break;
 
-        }
+            case R.id.setTemp:
+                String strToNum = setTempTxt.getText().toString();
+                 //int temperature = Integer.valueOf(strToNum);
 
-    }
-
-    public void subscribeLed() {
-
-        final String topic = "mytopic/iot/led";
-
-        Log.d(LOG_TAG, "topic = " + topic);
-
-        try {
-            mqttManager.subscribeToTopic(topic, AWSIotMqttQos.QOS0, new AWSIotMqttNewMessageCallback() {
-                @Override
-                public void onMessageArrived(final String topic, final byte[] data) {
-                    try {
-                        String message = new String(data, "UTF-8");
-                        Log.d(LOG_TAG, "Message arrived:");
-                        Log.d(LOG_TAG, "   Topic: " + topic);
-                        Log.d(LOG_TAG, " Message: " + message);
-
-                        //incomingText.append(message+"\n");
-
-                    } catch (UnsupportedEncodingException e) {
-                        Log.e(LOG_TAG, "Message encoding error.", e);
-                    }
+                if (strToNum.matches("")) {
+                    final AlertDialog.Builder dialog = new AlertDialog.Builder(MQTTActivity.this);
+                    dialog.setTitle("Empty field");
+                    dialog.setMessage("Please set the temperature");
+                    dialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int i) {
+                            dialog.dismiss();
+                        }
+                    });
+                    dialog.show();
                 }
-            });
+                else{
+                    Toast.makeText(this, "Temperature set!", Toast.LENGTH_SHORT).show();
 
+                }
 
-
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Subscription error.", e);
+                break;
         }
+
     }
+
 }
 

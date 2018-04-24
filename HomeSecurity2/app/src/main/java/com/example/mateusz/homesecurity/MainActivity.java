@@ -7,22 +7,20 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
+
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.parse.Parse;
+import com.parse.ParseException;
 import com.parse.ParseObject;
-
-import permissions.dispatcher.NeedsPermission;
-import permissions.dispatcher.RuntimePermissions;
-
+import com.parse.ParseSession;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener {
 
@@ -30,11 +28,41 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private Button loginButton;
     private Button createAccount;
     private Button getToken;
+    private Button goToS3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+
+
+       /* Parse.initialize(new Parse.Configuration.Builder(this)
+                .applicationId("a605003a0c655a69bdf510387f141a495c79cd38")
+                .clientKey("34a315a5adc38ce9566a14d2dd33d7e49240080e")
+                .server("http://34.245.171.7:80/parse/")
+                .build()
+        );
+
+
+        ParseObject testObj = new ParseObject("Test");
+
+        testObj.put("test", "test2");
+        testObj.saveInBackground(new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+
+                if (e == null){
+                    Log.i("ParserServer", "All ok");
+                }
+                else {
+                    Log.e("ParserServer", e.getMessage());
+                }
+            }
+        });
+*/
+
 
         Toast.makeText(this, "App started succesfully!", Toast.LENGTH_SHORT).show();
         Log.i("info", "Done creating the app");
@@ -47,6 +75,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         loginButton = (Button) findViewById(R.id.createAcc);
         createAccount = (Button) findViewById(R.id.login);
         getToken = (Button) findViewById(R.id.token);
+        goToS3 = (Button) findViewById(R.id.toS3);
 
         //Check internet access
         if(!isNetworkAvailable()){
@@ -82,11 +111,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             loginButton.setOnClickListener(this);
             createAccount.setOnClickListener(this);
             getToken.setOnClickListener(this);
+            goToS3.setOnClickListener(this);
 
 
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ParseUser.logOut();
+    }
 
     @Override
     public void onClick(View view) {
@@ -102,6 +137,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 String token = FirebaseInstanceId.getInstance().getToken();
                 Log.i("info", token);
                 Toast.makeText(MainActivity.this, token,Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.toS3:
+                startActivity(new Intent(MainActivity.this, S3Activity.class));
                 break;
 
 

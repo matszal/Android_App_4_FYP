@@ -20,6 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
         android:layout_below="@+id/login"
         android:layout_marginTop="-261dp"
         android:text="Create Account" />
@@ -30,6 +31,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
         android:layout_marginBottom="261dp"
         android:padding="5dp"
         android:text="Login" />
@@ -40,7 +42,22 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
         android:layout_marginStart="33dp"
+        android:layout_marginLeft="33dp"
+
         android:text="Token" />
+
+    <Button
+        android:id="@+id/toS3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginStart="133dp"
+        android:layout_marginLeft="133dp"
+        android:text="TO S3" />
+
 
 </RelativeLayout>

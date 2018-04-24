@@ -18,6 +18,7 @@ import com.parse.SignUpCallback;
 
 public class CreateAccount extends BaseActivity {
 
+    private static final String TAG="Create Account Activity";
     private EditText userName;
     private EditText userPassword;
     private Button createAccount;
@@ -93,11 +94,14 @@ public class CreateAccount extends BaseActivity {
                     }
                     else {
 
+                        Log.i("PARSEEEEEEEEE", "eeeeeerrrrrrrrrrr");
+
                     }
                 }
             });
         }
         else {
+            Log.i("PARSEEEEEEEEE", "connection issue");
 
         }
     }
