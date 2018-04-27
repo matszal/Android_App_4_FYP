@@ -36,34 +36,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         setContentView(R.layout.activity_main);
 
 
-
-
-       /* Parse.initialize(new Parse.Configuration.Builder(this)
-                .applicationId("a605003a0c655a69bdf510387f141a495c79cd38")
-                .clientKey("34a315a5adc38ce9566a14d2dd33d7e49240080e")
-                .server("http://34.245.171.7:80/parse/")
-                .build()
-        );
-
-
-        ParseObject testObj = new ParseObject("Test");
-
-        testObj.put("test", "test2");
-        testObj.saveInBackground(new SaveCallback() {
-            @Override
-            public void done(ParseException e) {
-
-                if (e == null){
-                    Log.i("ParserServer", "All ok");
-                }
-                else {
-                    Log.e("ParserServer", e.getMessage());
-                }
-            }
-        });
-*/
-
-
         Toast.makeText(this, "App started succesfully!", Toast.LENGTH_SHORT).show();
         Log.i("info", "Done creating the app");
 
@@ -76,6 +48,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         createAccount = (Button) findViewById(R.id.login);
         getToken = (Button) findViewById(R.id.token);
         goToS3 = (Button) findViewById(R.id.toS3);
+        goToS3.setEnabled(false);
 
         //Check internet access
         if(!isNetworkAvailable()){

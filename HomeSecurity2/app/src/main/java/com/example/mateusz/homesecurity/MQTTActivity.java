@@ -2,13 +2,18 @@ package com.example.mateusz.homesecurity;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.nfc.Tag;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.text.InputFilter;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,18 +31,8 @@ import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
 import com.parse.ParseUser;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.UUID;
 
 
@@ -46,6 +41,9 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
 
     static final String LOG_TAG = MainActivity.class.getCanonicalName();
     private static Regions MY_REGION = Regions.EU_WEST_1;
+    private ArrayList<String> labels = null;
+    private ArrayList<DynamoDBManager.UserPreference> items = null;
+    public static AmazonClientManager clientManager = null;
 
     String clientId;
     String keystorePath;
@@ -63,10 +61,13 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
     Button devON;
     Button devOFF;
 
+    Button readDB;
+
     TextView tvClientId;
     TextView tvStatus;
 
     EditText setTempTxt;
+    TextView dynamoDBText;
 
 
     AWSIotClient mIotAndroidClient;
@@ -82,28 +83,33 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
         //setTempTxt.setFilters(new InputFilter[]{new InputFilterMM("17", "27")});
         tvClientId = (TextView) findViewById(R.id.tvClientId);
         tvStatus = (TextView) findViewById(R.id.tvStatus);
-        btnCon = (Button)findViewById(R.id.btnConnect);
+        btnCon = (Button) findViewById(R.id.btnConnect);
         btnCon.setEnabled(false);
-        btnDisc = (Button)findViewById(R.id.btnDisconnect);
+        btnDisc = (Button) findViewById(R.id.btnDisconnect);
         devON = (Button) findViewById(R.id.deviceON);
         devON.setEnabled(false);
-        devOFF = (Button)findViewById(R.id.deviceOFF);
+        devOFF = (Button) findViewById(R.id.deviceOFF);
         devOFF.setEnabled(false);
-        btnSetTemp = (Button)findViewById(R.id.setTemp);
+        btnSetTemp = (Button) findViewById(R.id.setTemp);
         btnSetTemp.setEnabled(false);
+        readDB = (Button) findViewById(R.id.btnReadDB);
+        readDB.setEnabled(false);
+        dynamoDBText = (TextView) findViewById(R.id.tempReadDB);
+
 
         devON.setOnClickListener(this);
         devOFF.setOnClickListener(this);
         btnCon.setOnClickListener(this);
         btnDisc.setOnClickListener(this);
         btnSetTemp.setOnClickListener(this);
+        readDB.setOnClickListener(this);
 
 
         clientId = UUID.randomUUID().toString();
         tvClientId.setText(clientId);
 
-        //Log.i("¢######################", clientId);
-        Log.i("¢######################", Constants.CUSTOMER_SPECIFIC_ENDPOINT.toString());
+
+        clientManager = new AmazonClientManager(this);
 
         // Initialize the AWS Cognito credentials provider
         credentialsProvider = new CognitoCachingCredentialsProvider(
@@ -220,11 +226,11 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
     }
 
     @Override
-    public void onClick(View view){
+    public void onClick(View view) {
 
         final String topic = "mytopic/iot/led";
 
-        switch (view.getId()){
+        switch (view.getId()) {
 
             case R.id.deviceON:
 
@@ -269,6 +275,7 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
                                         devOFF.setEnabled(true);
                                         devON.setEnabled(true);
                                         btnSetTemp.setEnabled(true);
+                                        readDB.setEnabled(true);
                                         //if (!alreadyEcecuted){
                                         //  Intent intent = new Intent(v.getContext(), TabbedActivity.class);
                                         //v.getContext().startActivity(intent);
@@ -317,7 +324,7 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
 
             case R.id.setTemp:
                 String strToNum = setTempTxt.getText().toString();
-                 //int temperature = Integer.valueOf(strToNum);
+                //int temperature = Integer.valueOf(strToNum);
 
                 if (strToNum.matches("")) {
                     final AlertDialog.Builder dialog = new AlertDialog.Builder(MQTTActivity.this);
@@ -330,16 +337,107 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
                         }
                     });
                     dialog.show();
-                }
-                else{
+                } else {
                     Toast.makeText(this, "Temperature set!", Toast.LENGTH_SHORT).show();
 
                 }
 
                 break;
+            case R.id.btnReadDB:
+                Toast.makeText(this, "dynamao button chedck", Toast.LENGTH_SHORT).show();
+                new DynamoDBManagerTask()
+                        .execute(DynamoDBManagerType.LIST_TEMPERATURE);
+                //dynamoDBText.setText("test");
+                break;
         }
 
     }
 
+    private enum DynamoDBManagerType {
+        GET_TABLE_STATUS, CREATE_TABLE, INSERT_USER, LIST_TEMPERATURE, CLEAN_UP
+    }
+
+
+
+    private class DynamoDBManagerTask extends
+            AsyncTask<DynamoDBManagerType, Void, DynamoDBManagerTaskResult> {
+
+        protected DynamoDBManagerTaskResult doInBackground(
+                DynamoDBManagerType... types) {
+
+
+            String tableStatus = DynamoDBManager.getTestTableStatus();
+
+            DynamoDBManagerTaskResult result = new DynamoDBManagerTaskResult();
+            result.setTableStatus(tableStatus);
+            result.setTaskType(types[0]);
+
+
+            if (types[0] == DynamoDBManagerType.LIST_TEMPERATURE) {
+                if (tableStatus.equalsIgnoreCase("ACTIVE")) {
+                    DynamoDBManager.getTemperature();
+                }
+            }
+            return result;
+        }
+
+
+        protected void onPostExecute(DynamoDBManagerTaskResult result) {
+
+            if (result.getTaskType() == DynamoDBManagerType.LIST_TEMPERATURE
+                    && result.getTableStatus().equalsIgnoreCase("ACTIVE")) {
+
+                //dynamoDBText.setText(result.toString());
+
+                Log.i(LOG_TAG, result.toString());
+
+                new GetUserListTask().execute();
+
+
+            }
+        }
+    }
+
+
+    private class GetUserListTask extends AsyncTask<Void, Void, Void> {
+
+        protected Void doInBackground(Void... inputs) {
+
+            labels = new ArrayList<String>();
+
+            items = DynamoDBManager.getTemperature();
+
+            for (DynamoDBManager.UserPreference up : items) {
+                //dynamoDBText.setText(up.getUserNo());
+                Log.i(LOG_TAG, ""+up.getDBTemperature());
+            }
+
+            return null;
+        }
+    }
+
+    private class DynamoDBManagerTaskResult {
+        private DynamoDBManagerType taskType;
+        private String tableStatus;
+
+        public DynamoDBManagerType getTaskType() {
+            return taskType;
+        }
+
+        public void setTaskType(DynamoDBManagerType taskType) {
+            this.taskType = taskType;
+        }
+
+        public String getTableStatus() {
+            return tableStatus;
+        }
+
+        public void setTableStatus(String tableStatus) {
+            this.tableStatus = tableStatus;
+        }
+    }
+
+
 }
+
 
