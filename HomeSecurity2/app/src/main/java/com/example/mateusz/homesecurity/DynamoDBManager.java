@@ -1,8 +1,5 @@
 package com.example.mateusz.homesecurity;
 
-import android.util.Log;
-import android.widget.Toast;
-
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBAttribute;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
@@ -77,15 +74,16 @@ public class DynamoDBManager {
 
     @DynamoDBTable(tableName = Constants.TEST_TABLE_NAME)
     public static class UserPreference {
-        private String DeviceID;
+        private double millis;
         private String temperature;
 
 
-        @DynamoDBHashKey(attributeName = "DeviceID")
-        public String getDeviceID() {
-            return DeviceID;
+
+        @DynamoDBHashKey(attributeName = "millis")
+        public double getMillis() {
+            return millis;
         }
-        public void setDeviceID(String DeviceID) { this.DeviceID = DeviceID;}
+        public void setMillis(double millis) { this.millis = millis;}
 
         @DynamoDBAttribute(attributeName = "temperature")
         public String getDBTemperature() { return temperature; }

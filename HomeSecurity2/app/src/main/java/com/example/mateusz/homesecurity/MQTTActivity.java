@@ -33,6 +33,10 @@ import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
 import com.parse.ParseUser;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -407,10 +411,43 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
 
             items = DynamoDBManager.getTemperature();
 
+            Map<Double, String> map = new HashMap<Double, String>();
+
             for (DynamoDBManager.UserPreference up : items) {
-                //dynamoDBText.setText(up.getUserNo());
-                Log.i(LOG_TAG, ""+up.getDBTemperature());
+                Double key = new Double(up.getMillis());
+                String value = new String(up.getDBTemperature());
+                map.put(key, value);
+                //Log.i(LOG_TAG, "\n"+up.getMillis()+" "+up.getDBTemperature());
             }
+
+            for (Double name: map.keySet()){
+                String key = name.toString();
+                String value = map.get(name).toString();
+                Log.i(LOG_TAG, key+" "+ value);
+            }
+
+            List keys = new ArrayList(map.keySet());
+            Collections.sort(keys);
+            Log.i(LOG_TAG, " "+ keys);
+            int index = keys.size()-1;
+            //Log.e(LOG_TAG, ""+keys.get(index));
+
+            String latestDBentry = keys.get(index).toString();
+            double latestToDouble = Double.parseDouble(latestDBentry);
+
+            //Log.e(LOG_TAG, ""+latestToDouble);
+
+            final String toUI = map.get(latestToDouble);
+            Log.e(LOG_TAG, ""+toUI);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dynamoDBText.setText(toUI);
+                }
+            });
+
+
 
             return null;
         }
