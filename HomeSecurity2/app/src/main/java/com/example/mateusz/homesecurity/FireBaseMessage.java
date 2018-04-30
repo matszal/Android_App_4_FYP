@@ -22,14 +22,23 @@ public class FireBaseMessage extends FirebaseMessagingService  {
 
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "Message data: "+ remoteMessage.getData());
-            Intent intent = new Intent(this, MainActivity.class);
+            String str = remoteMessage.getData().toString();
+            int length = str.length();
+            Log.e(TAG, "Message data: "+str.substring(9, length-1));
+            String url = str.substring(9, length-1);
+
+
+            //Intent intent = new Intent(this, MainActivity.class);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.setData(Uri.parse(url));
+            //startActivity(intent);
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
             Uri notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             NotificationCompat.Builder notifBuilder = new NotificationCompat.Builder(this)
                     .setSmallIcon(android.R.mipmap.sym_def_app_icon)
-                    .setContentTitle("SNS Message")
+                    .setContentTitle("Home Security Notification")
                     .setContentText(remoteMessage.getData().toString())
                     .setAutoCancel(true)
                     .setSound(notificationSound)

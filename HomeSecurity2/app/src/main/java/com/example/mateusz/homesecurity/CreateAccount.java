@@ -94,14 +94,14 @@ public class CreateAccount extends BaseActivity {
                     }
                     else {
 
-                        Log.i("PARSEEEEEEEEE", "eeeeeerrrrrrrrrrr");
+                        Log.i(TAG, "error");
 
                     }
                 }
             });
         }
         else {
-            Log.i("PARSEEEEEEEEE", "connection issue");
+            Log.i(TAG, "connection issue");
 
         }
     }

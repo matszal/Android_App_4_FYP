@@ -232,16 +232,15 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
     @Override
     public void onClick(View view) {
 
-        final String topic = "mytopic/iot/led";
+        final String topic_led      = "mytopic/iot/led";
+        final String topic_heater   = "mytopic/iot/heat";
 
         switch (view.getId()) {
 
             case R.id.deviceON:
 
-                //final String msg = outgoingText.getText().toString();
-
                 try {
-                    mqttManager.publishString("on", topic, AWSIotMqttQos.QOS0);
+                    mqttManager.publishString("on", topic_led, AWSIotMqttQos.QOS0);
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Publish error.", e);
                 }
@@ -249,7 +248,7 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
             case R.id.deviceOFF:
 
                 try {
-                    mqttManager.publishString("off", topic, AWSIotMqttQos.QOS0);
+                    mqttManager.publishString("off", topic_led, AWSIotMqttQos.QOS0);
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Publish error.", e);
                 }
@@ -343,15 +342,18 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
                     dialog.show();
                 } else {
                     Toast.makeText(this, "Temperature set!", Toast.LENGTH_SHORT).show();
-
+                    Log.i(LOG_TAG, "Temperature set to: "+strToNum);
+                    try {
+                        mqttManager.publishString("temperaturetoset "+strToNum, topic_heater, AWSIotMqttQos.QOS0);
+                    } catch (Exception e) {
+                        Log.e(LOG_TAG, "Publish error.", e);
+                    }
                 }
-
                 break;
+
             case R.id.btnReadDB:
-                Toast.makeText(this, "dynamao button chedck", Toast.LENGTH_SHORT).show();
                 new DynamoDBManagerTask()
                         .execute(DynamoDBManagerType.LIST_TEMPERATURE);
-                //dynamoDBText.setText("test");
                 break;
         }
 
@@ -390,8 +392,6 @@ public class MQTTActivity extends BaseActivity implements View.OnClickListener {
 
             if (result.getTaskType() == DynamoDBManagerType.LIST_TEMPERATURE
                     && result.getTableStatus().equalsIgnoreCase("ACTIVE")) {
-
-                //dynamoDBText.setText(result.toString());
 
                 Log.i(LOG_TAG, result.toString());
 

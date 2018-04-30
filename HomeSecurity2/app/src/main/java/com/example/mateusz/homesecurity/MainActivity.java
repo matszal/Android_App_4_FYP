@@ -28,7 +28,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private Button loginButton;
     private Button createAccount;
     private Button getToken;
-    private Button goToS3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +46,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         loginButton = (Button) findViewById(R.id.createAcc);
         createAccount = (Button) findViewById(R.id.login);
         getToken = (Button) findViewById(R.id.token);
-        goToS3 = (Button) findViewById(R.id.toS3);
-        goToS3.setEnabled(false);
+
 
         //Check internet access
         if(!isNetworkAvailable()){
@@ -84,8 +82,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             loginButton.setOnClickListener(this);
             createAccount.setOnClickListener(this);
             getToken.setOnClickListener(this);
-            goToS3.setOnClickListener(this);
-
 
         }
     }
@@ -111,10 +107,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 Log.i("info", token);
                 Toast.makeText(MainActivity.this, token,Toast.LENGTH_SHORT).show();
                 break;
-            case R.id.toS3:
-                startActivity(new Intent(MainActivity.this, S3Activity.class));
-                break;
-
 
         }
 

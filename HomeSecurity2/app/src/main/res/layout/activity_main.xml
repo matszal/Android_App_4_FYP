@@ -48,16 +48,5 @@
 
         android:text="Token" />
 
-    <Button
-        android:id="@+id/toS3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginStart="133dp"
-        android:layout_marginLeft="133dp"
-        android:text="TO S3" />
-
 
 </RelativeLayout>
